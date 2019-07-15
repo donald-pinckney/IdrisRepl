@@ -32,7 +32,7 @@ firstWordSplit xs =
 
 public export
 ReplCommand : Type
-ReplCommand = () -> Result (Maybe String)
+ReplCommand = () -> IO (Result (Maybe String))
 
 public export
 record CommandBuilder where
@@ -48,15 +48,15 @@ helpRow (MkCommandBuilder commandStrs argStrs docStrs buildFn) =
     commandsStr ++ " " ++ argStrs ++ "\r\n\t" ++ docStrs
 
 
-execReplCommand : ReplCommand -> Result (Maybe String)
+execReplCommand : ReplCommand -> IO (Result (Maybe String))
 execReplCommand f = f ()
 
 
 Command_nop : ReplCommand
-Command_nop = \_ => Right $ Just ""
+Command_nop = \_ => pure $ Right $ Just ""
 
 Command_quit : ReplCommand
-Command_quit = \_ => Right $ Nothing
+Command_quit = \_ => pure $ Right $ Nothing
 
 
 
@@ -66,7 +66,7 @@ parameters (supportedCommands : List CommandBuilder)
         helpStr = unlines $ map helpRow actualSupportedCommands
 
         Command_help : ReplCommand
-        Command_help = \_ => Right $ Just helpStr
+        Command_help = \_ => pure $ Right $ Just helpStr
 
         actualSupportedCommands : List CommandBuilder
         actualSupportedCommands = supportedCommands ++ [
@@ -105,16 +105,19 @@ parameters (supportedCommands : List CommandBuilder)
             (x :: xs) => buildDefaultCommand cmdStr
 
 
-    replIteration : String -> Result (Maybe String)
-    replIteration inputStr = do
-        command <- parseReplCommand inputStr
-        execReplCommand command
+    replIteration : String -> IO (Result (Maybe String))
+    replIteration inputStr =
+        case parseReplCommand inputStr of
+            (Left parseErr) => pure $ Left parseErr
+            (Right command) => execReplCommand command
 
-    replIterationWrapped : a -> String -> Maybe (String, a)
-    replIterationWrapped state x = case replIteration x of
-        (Left l) => Just ("Error: " ++ l ++ "\r\n", state)
-        (Right Nothing) => Nothing
-        (Right (Just a)) => Just (a ++ "\r\n", state)
+    replIterationWrapped : a -> String -> IO (Maybe (String, a))
+    replIterationWrapped state x = do
+        res <- replIteration x
+        case res of
+            (Left l) => pure $ Just ("Error: " ++ l ++ "\r\n", state)
+            (Right Nothing) => pure $ Nothing
+            (Right (Just a)) => pure $ Just (a ++ "\r\n", state)
 
     export
     replMain : IO ()

@@ -3,7 +3,9 @@ module Main
 import GenericRepl
 
 Command_echo : String -> ReplCommand
-Command_echo str = \_ => Right $ Just str
+Command_echo str = \_ => do
+    putStrLn "ECHO:"
+    pure $ Right $ Just str
 
 SupportedCommands : List CommandBuilder
 SupportedCommands = [
