@@ -2,8 +2,11 @@ package idrisrepl
 
 pkgs = baseline
 
-modules = AbstractRepl
+modules = GenericRepl
     , BaselineRepl
+    , Shared
+    , SExp
+    , IdeProtocol
     , Main
 sourcedir = src
 executable = idrisrepl

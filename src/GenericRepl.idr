@@ -1,25 +1,14 @@
 module GenericRepl
 
 import BaselineRepl
+import Shared
 
 -- First, just some random util stuff
-
-public export
-Result : Type -> Type
-Result a = Either String a
 
 joinBy : List (List a) -> a -> List a
 joinBy [] s = []
 joinBy [xs] s = xs
 joinBy (x :: xs) s = x ++ s :: (joinBy xs s)
-
-eatWhitespace : List Char -> List Char
-eatWhitespace [] = []
-eatWhitespace (x :: xs) =
-    if x == ' ' || x == '\n' || x == '\t' || x == '\r' then
-        eatWhitespace xs
-    else
-        (x :: xs)
 
 
 firstWordSplit : List Char -> Result (List Char, List Char)

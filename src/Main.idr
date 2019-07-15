@@ -1,6 +1,7 @@
 module Main
 
 import GenericRepl
+import Shared
 
 Command_echo : String -> ReplCommand
 Command_echo str = \_ => do
