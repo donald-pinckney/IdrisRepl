@@ -1,0 +1,6 @@
+package idrisrepl
+
+sourcedir = src
+executable = idrisrepl
+
+main = Main
