@@ -1,5 +1,10 @@
 package idrisrepl
 
+pkgs = baseline
+
+modules = AbstractRepl
+    , BaselineRepl
+    , Main
 sourcedir = src
 executable = idrisrepl
 
