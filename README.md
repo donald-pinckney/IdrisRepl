@@ -27,4 +27,5 @@ To change between using `idris` and `idris2` just set `IDRIS_NAME` in `src/Confi
 - [ ] Bolding prompt
 - [ ] Highlighting (somewhat confused about how to parse this)
 - [ ] All the rest of the commands!
+- [ ] Windows support
 - [ ] Testing infrstructure?
