@@ -1,7 +1,7 @@
 module IdeProtocol
 
 import SExp
-import Pipes
+import SystemStuff
 import HexString
 import Shared
 
