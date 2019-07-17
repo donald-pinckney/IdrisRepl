@@ -51,7 +51,7 @@ atoms xs = CSExpList (map CSExpAtom xs)
 commandToSExp : IdeCommand -> CSExp
 commandToSExp (IdeCommLoadFile x Nothing) = atoms [CAtomSymbol "load-file", CAtomStr x]
 commandToSExp (IdeCommLoadFile x (Just y)) = atoms [CAtomSymbol "load-file", CAtomStr x, CAtomNum y]
-commandToSExp (IdeCommInterpret x) = ?commandToSExp_rhs_2
+commandToSExp (IdeCommInterpret x) = atoms [CAtomSymbol "interpret", CAtomStr x]
 commandToSExp (IdeCommTypeOf x) = ?commandToSExp_rhs_3
 commandToSExp (IdeCommEdit x) = ?commandToSExp_rhs_4
 commandToSExp (IdeCommDocsFor x Full) = ?commandToSExp_rhs_1
