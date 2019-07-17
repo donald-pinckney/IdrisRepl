@@ -12,6 +12,8 @@ To change between using `idris` and `idris2` just set `IDRIS_NAME` in `src/Confi
 
 ### Building
 
+Only tested so far on macOS, should probably work fine on Linux as well. No Windows support yet.
+
 - Build: `idris --build idrisrepl.ipkg`
 - Run: `./idrisrepl`
 
