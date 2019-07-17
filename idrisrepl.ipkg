@@ -9,6 +9,8 @@ modules = GenericRepl
     , IdeProtocol
     , Main
     , Pipes
+    , Repl
+
 objs = pipes.c
 sourcedir = src
 executable = idrisrepl

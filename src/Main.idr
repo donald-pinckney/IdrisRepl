@@ -5,37 +5,54 @@ import Shared
 import System
 import Data.Bits
 import Pipes
-
-Command_echo : String -> ReplCommand
-Command_echo str = \_ => do
-    putStrLn "ECHO:"
-    pure $ Right $ Just str
-
-SupportedCommands : List CommandBuilder
-SupportedCommands = [
-    MkCommandBuilder [['e'],['e','c','h','o']]
-        "<term>"
-        "Performs beta multistep on <term> until it is in BNF."
-        (pure . Command_echo . pack)
-]
-
-initializeRepl : IO ()
-initializeRepl = do
-    (pr, pw) <- pipe_safe
-    putStrLn (show pr)
-    putStrLn (show pw)
+import IdeProtocol
+import Repl
 
 
-    -- putStrLn "cats"
-    -- fork $ do
-    -- -- n <- system "idris --ide-mode"
-    -- putStrLn (show 1234)
+STDIN_FILENO : Int
+STDIN_FILENO = 0
+
+STDOUT_FILENO : Int
+STDOUT_FILENO = 1
+
+fork_idris_proc : IO (File, File)
+fork_idris_proc = do
+    (send_read, send_write) <- pipe
+    (recv_read, recv_write) <- pipe
+    p <- fork_proc
+    case p of
+        0 => do
+            close send_write
+            dup2 send_read STDIN_FILENO
+            close send_read
+
+            close recv_read
+            dup2 recv_write STDOUT_FILENO
+            close recv_write
+
+            exec_idris_ide_mode
+
+            pure $ believe_me ()
+        _ => do
+            close recv_write
+            close send_read
+
+            Right read_f <- fdopen recv_read "r"
+                | Left err => idris_crash (show err)
+            Right write_f <- fdopen send_write "w"
+                | Left err => idris_crash (show err)
+
+            setlinebuf read_f
+            setlinebuf write_f
+
+            pure (read_f, write_f)
 
 export
 main : IO ()
 main = do
-    p <- initializeRepl
-    -- pidBits <- prim_peek32 p 0
-    -- putStrLn (show pidBits)
-    -- let n = bitsToInt' {n=32} pidBits
-    replMain SupportedCommands
+    (read_f, write_f) <- fork_idris_proc
+
+    Right recBuf <- readIdeLine read_f
+        | Left err => reportErr err
+
+    idrisRepl read_f write_f
