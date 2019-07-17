@@ -85,8 +85,17 @@ data IdeReply
     | IdeReplyWriteString String
     | IdeReplySetPrompt String
     | IdeReplyWarning String Integer Integer Integer Integer String (List SemanticSpan)
+
     -- (:warning (FilePath (LINE COL) (LINE COL) String [HIGHLIGHTING]))
 
+implementation Show IdeReply where
+  show (IdeReplyReturnOk x xs) = "return, ok: " ++ (show x)
+  show (IdeReplyReturnErr x xs) = "return, error: " ++ (show x)
+  show (IdeReplyOutputOk x xs) = "output, ok: " ++ (show x)
+  show (IdeReplyOutputErr x xs) = "output, error: " ++ (show x)
+  show (IdeReplyWriteString x) = "write string: " ++ (show x)
+  show (IdeReplySetPrompt x) = "set prompt: " ++ (show x)
+  show (IdeReplyWarning path l1 c1 l2 c2 str xs) = "warning: " ++ path ++ "\n\t" ++ str
 
 export
 readIdeLine : File -> IO (Either String String)
@@ -101,7 +110,7 @@ readIdeLine f =
             | Left err => pure (Left (show err))
 
         let payload = reverse (trimNL (reverse payloadNL))
-        putStrLn $ "Received from pipe: " ++ payload
+        -- putStrLn $ "Received from pipe: " ++ payload
         pure (Right payload)
 
     where
@@ -140,4 +149,59 @@ readIdeReply f id = do
     Right line <- readIdeLine f
         | Left err => pure (Left err)
 
-    ?qwer
+    let Right (CSExpList replyArgs') = parse_sexp_main (unpack line)
+        | Left err => pure (Left $ "parse error: " ++ err)
+        | Right (CSExpAtom a) => pure (Left $ "expected list, got atom: " ++ (show a))
+
+    -- Validate request ID
+    let (CSExpAtom (CAtomNum replyId) :: replyArgs_rev') = reverse replyArgs'
+        | [] => pure (Left $ "expected non-empty list")
+        | (h :: rest) => pure (Left $ "expected to receive request id as last element, instead got: " ++ (show replyArgs'))
+    let True = id == replyId
+        | False => pure (Left $ "expected request id " ++ (show id) ++ ", instead received id " ++ (show replyId))
+    let replyArgs = reverse replyArgs_rev'
+
+    -- Parse reply into enum
+    pure $ case replyArgs of
+        [] => (Left $ "expected list of length greater than 1, got: " ++ (show replyArgs'))
+        [CSExpAtom $ CAtomSymbol "return", CSExpList (
+            (CSExpAtom $ CAtomSymbol "ok") ::
+            sexp ::
+            hightlight)] =>
+            Right $ IdeReplyReturnOk sexp []
+        [CSExpAtom $ CAtomSymbol "return", CSExpList (
+            (CSExpAtom $ CAtomSymbol "error") ::
+            (CSExpAtom $ CAtomStr error) ::
+            hightlight)] =>
+            Right $ IdeReplyReturnErr error []
+        [CSExpAtom $ CAtomSymbol "output", CSExpList (
+            (CSExpAtom $ CAtomSymbol "ok") ::
+            sexp ::
+            hightlight)] =>
+            Right $ IdeReplyOutputOk sexp []
+        [CSExpAtom $ CAtomSymbol "output", CSExpList (
+            (CSExpAtom $ CAtomSymbol "error") ::
+            (CSExpAtom $ CAtomStr error) ::
+            hightlight)] =>
+            Right $ IdeReplyOutputErr error []
+        [CSExpAtom $ CAtomSymbol "write-string", CSExpAtom $ CAtomStr str] =>
+            Right $ IdeReplyWriteString str
+        [CSExpAtom $ CAtomSymbol "set-prompt", CSExpAtom $ CAtomStr str] =>
+            Right $ IdeReplySetPrompt str
+        [CSExpAtom $ CAtomSymbol "warning", CSExpList (
+            (CSExpAtom $ CAtomStr filePath) ::
+            (CSExpList [CSExpAtom $ CAtomNum line1, CSExpAtom $ CAtomNum col1]) ::
+            (CSExpList [CSExpAtom $ CAtomNum line2, CSExpAtom $ CAtomNum col2]) ::
+            (CSExpAtom $ CAtomStr str) ::
+            hightlight)] =>
+            Right $ IdeReplyWarning filePath line1 col1 line2 col2 str []
+        _ => (Left $ "Do not understand: " ++ (show replyArgs))
+
+export
+readIdeReply_trace : File -> Integer -> IO (Either String IdeReply)
+readIdeReply_trace f id = do
+    Right reply <- readIdeReply f id
+        | Left err => pure (Left err)
+
+    putStrLn ("Received reply: " ++ (show reply))
+    pure (Right reply)

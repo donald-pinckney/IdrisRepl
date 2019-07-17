@@ -16,9 +16,9 @@ Command_load path state = do
     Right () <- writeIdeCommand (write_f state) (reqId state) (IdeCommLoadFile path Nothing)
         | Left err => pure (Left err)
 
-    Right line <- readIdeLine (read_f state)
-    Right line <- readIdeLine (read_f state)
-    Right line <- readIdeLine (read_f state)
+    Right reply <- readIdeReply_trace (read_f state) (reqId state)
+    Right reply <- readIdeReply_trace (read_f state) (reqId state)
+    Right reply <- readIdeReply_trace (read_f state) (reqId state)
 
     pure $ Right $ Just ("Load: " ++ path, record { reqId $= (+ 1) } state)
 
