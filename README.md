@@ -30,7 +30,8 @@ Only tested so far on macOS, should probably work fine on Linux as well. No Wind
 - [ ] Highlighting (somewhat confused about how to parse this)
 - [ ] All the rest of the commands!
     - [x] Evaluation, `:eval`
-    - [ ] `:t`
+    - [x] `:t`
+        - [ ] Broken with integer literals, i.e. `:t 5`
     - [ ] ...
 - [ ] Windows support
 - [ ] Testing infrastructure?
