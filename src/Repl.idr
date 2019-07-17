@@ -51,14 +51,9 @@ handling_command f = pure . (handling_command' f) . pack
 
 SupportedCommands : List (CommandBuilder ReplState)
 SupportedCommands = [
-    MkCommandBuilder [['e','v','a','l']]
-        "<expr>"
-        "Evaluate an expression"
-        (handling_command IdeCommInterpret),
-    MkCommandBuilder [['l'],['l','o','a','d']]
-        "<filename>"
-        "Load a new file"
-        (handling_command (\path => IdeCommLoadFile path Nothing))
+    MkCommandBuilder [['e','v','a','l']] "<expr>" "Evaluate an expression" (handling_command IdeCommInterpret),
+    MkCommandBuilder [['l'],['l','o','a','d']] "<filename>" "Load a new file" (handling_command (\path => IdeCommLoadFile path Nothing)),
+    MkCommandBuilder [['t'],['t','y','p','e']] "<expr>" "Check the type of an expression" (handling_command IdeCommTypeOf)
 ]
 
 export

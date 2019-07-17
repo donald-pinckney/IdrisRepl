@@ -2,7 +2,7 @@ module Config
 
 public export
 SHOULD_TRACE : Bool
-SHOULD_TRACE = False
+SHOULD_TRACE = True
 
 public export
 IDRIS_NAME : String
