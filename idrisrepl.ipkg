@@ -2,17 +2,18 @@ package idrisrepl
 
 pkgs = baseline
 
-modules = GenericRepl
-    , BaselineRepl
-    , Shared
-    , SExp
+modules = BaselineRepl
+    , Config
+    , GenericRepl
+    , HexString
     , IdeProtocol
     , Main
-    , Pipes
     , Repl
-    , Config
+    , SExp
+    , Shared
+    , SystemStuff
 
-objs = pipes.c
+objs = system_stuff.c
 sourcedir = src
 executable = idrisrepl
 

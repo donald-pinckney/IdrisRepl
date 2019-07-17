@@ -1,5 +1,7 @@
 module Shared
 
+import Config
+
 public export
 Result : Type -> Type
 Result a = Either String a
@@ -21,3 +23,12 @@ expect (cx :: xs) c =
         Right xs
     else
         Left $ "Expected '" ++ (singleton c) ++ "', got '" ++ (singleton cx) ++ "'"
+
+export
+fatalError : Show a => a -> b
+fatalError x =
+    idris_crash (show x)
+
+export
+traceStrLn : String -> IO ()
+traceStrLn str = if SHOULD_TRACE then putStrLn str else pure ()

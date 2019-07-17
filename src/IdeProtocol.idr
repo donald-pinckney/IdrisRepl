@@ -2,7 +2,8 @@ module IdeProtocol
 
 import SExp
 import Pipes
-import Config
+import HexString
+import Shared
 
 -- See: http://docs.idris-lang.org/en/latest/reference/ide-protocol.html
 

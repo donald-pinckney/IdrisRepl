@@ -32,15 +32,15 @@ fork_idris_proc = do
 
             exec_idris_ide_mode
 
-            pure $ believe_me ()
+            believe_me ()
         _ => do
             close recv_write
             close send_read
 
             Right read_f <- fdopen recv_read "r"
-                | Left err => idris_crash (show err)
+                | Left err => fatalError err
             Right write_f <- fdopen send_write "w"
-                | Left err => idris_crash (show err)
+                | Left err => fatalError err
 
             setlinebuf read_f
             setlinebuf write_f
@@ -53,6 +53,6 @@ main = do
     (read_f, write_f) <- fork_idris_proc
 
     Right recBuf <- readIdeLine read_f
-        | Left err => reportErr err
+        | Left err => fatalError err
 
     idrisRepl read_f write_f

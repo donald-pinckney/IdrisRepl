@@ -44,34 +44,3 @@ void *fileDescOpen(int fd, char *mode) {
     FILE *f = fdopen(fd, mode);
     return (void *)f;
 }
-
-void my_bzero(char *buf, int bs) {
-    for(int i = 0; i < bs; i++) {
-        buf[i] = '\0';
-    }
-}
-
-
-void idris_test_reading(int fdr, int fdw) {
-    char recBuf[1024];
-
-    my_bzero(recBuf, 1024);
-
-
-    printf("fdr = %d\n", fdr);
-    printf("fdw = %d\n", fdw);
-
-    read(fdr, recBuf, 1024);
-
-    printf("Received from pipe: %s\n", recBuf);
-
-    const char *buf = "000002x\n";
-    write(fdw, buf, sizeof(buf));
-
-    printf("Wrote to pipe!\n");
-
-    my_bzero(recBuf, 1024);
-    read(fdr, recBuf, 1024);
-
-    printf("Received from pipe: %s\n", recBuf);
-}
