@@ -1,6 +1,5 @@
 module SystemStuff
 
-import Data.Bits
 import Config
 
 %include C "system_stuff.c"
@@ -11,8 +10,6 @@ pipe = do
     fd01 <- foreign FFI_C "idris_pipe_64" (IO Bits64)
     let fd1 = prim__truncB64_B32 fd01
     let fd0 = prim__truncB64_B32 $ prim__lshrB64 fd01 32
-    -- putStrLn (show fd0)
-    -- putStrLn (show fd1)
     pure (prim__zextB32_Int fd0, prim__zextB32_Int fd1)
 
 export

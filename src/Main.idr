@@ -1,9 +1,6 @@
 module Main
 
-import GenericRepl
 import Shared
-import System
-import Data.Bits
 import SystemStuff
 import IdeProtocol
 import Repl

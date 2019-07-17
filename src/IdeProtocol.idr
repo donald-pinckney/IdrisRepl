@@ -1,7 +1,6 @@
 module IdeProtocol
 
 import SExp
-import SystemStuff
 import HexString
 import Shared
 
