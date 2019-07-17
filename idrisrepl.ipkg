@@ -10,6 +10,7 @@ modules = GenericRepl
     , Main
     , Pipes
     , Repl
+    , Config
 
 objs = pipes.c
 sourcedir = src

@@ -3,12 +3,30 @@ module Repl
 import GenericRepl
 import Shared
 import IdeProtocol
+import BaselineRepl
+import SExp
 
 record ReplState where
     constructor MkReplState
     read_f : File
     write_f : File
     reqId : Integer
+    currentPrompt : String
+
+implementation Prompt ReplState where
+    prompt = currentPrompt
+
+
+total
+handle_reply : ReplState -> Either String IdeReply -> IO ReplState
+handle_reply s (Left err) = do putStrLn $ "Error: " ++ err; pure s
+handle_reply s (Right (IdeReplyReturnOk x xs)) = pure s
+handle_reply s (Right (IdeReplyReturnErr x xs)) = pure s
+handle_reply s (Right (IdeReplyOutputOk x xs)) = pure s
+handle_reply s (Right (IdeReplyOutputErr x xs)) = pure s
+handle_reply s (Right (IdeReplyWriteString str)) = do putStrLn str; pure s
+handle_reply s (Right (IdeReplySetPrompt prmt)) = pure $ record { currentPrompt = prmt ++ "> "} s
+handle_reply s (Right (IdeReplyWarning x y z w r t xs)) = do putStrLn "warning!"; pure s
 
 
 Command_load : String -> ReplCommand ReplState
@@ -16,11 +34,9 @@ Command_load path state = do
     Right () <- writeIdeCommand (write_f state) (reqId state) (IdeCommLoadFile path Nothing)
         | Left err => pure (Left err)
 
-    Right reply <- readIdeReply_trace (read_f state) (reqId state)
-    Right reply <- readIdeReply_trace (read_f state) (reqId state)
-    Right reply <- readIdeReply_trace (read_f state) (reqId state)
+    newState <- readUntilReturn (read_f state) (reqId state) state handle_reply
 
-    pure $ Right $ Just ("Load: " ++ path, record { reqId $= (+ 1) } state)
+    pure $ Right $ Just ("", record { reqId $= (+ 1) } newState)
 
 
 SupportedCommands : List (CommandBuilder ReplState)
@@ -33,4 +49,4 @@ SupportedCommands = [
 
 export
 idrisRepl : File -> File -> IO ()
-idrisRepl read_f write_f = replMain SupportedCommands (MkReplState read_f write_f 1)
+idrisRepl read_f write_f = replMain SupportedCommands (MkReplState read_f write_f 1 "Idris> ")

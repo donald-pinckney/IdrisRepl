@@ -105,9 +105,9 @@ parameters (supportedCommands : List (CommandBuilder stateType))
         case res of
             (Left l) => pure $ Just ("Error: " ++ l ++ "\r\n", state)
             (Right Nothing) => pure $ Nothing
-            (Right (Just (str, newState))) => pure $ Just (str ++ "\r\n", newState)
+            (Right (Just (str, newState))) => pure $ Just (str, newState)
 
     export
-    replMain : stateType -> IO ()
+    replMain : Prompt stateType => stateType -> IO ()
     replMain initialState = do
-        baselineReplWith {completions=completions} initialState "Idris> " replIterationWrapped
+        baselineReplWith {completions=completions} initialState replIterationWrapped

@@ -2,9 +2,14 @@ module BaselineRepl
 
 import Baseline
 
-baselineReplWith_loop : a -> String -> (a -> String -> IO (Maybe (String, a))) -> IO ()
-baselineReplWith_loop state prompt f = do
-    str <- baseline prompt
+export
+interface Prompt a where
+    prompt : a -> String
+
+
+baselineReplWith_loop : Prompt a => a -> (a -> String -> IO (Maybe (String, a))) -> IO ()
+baselineReplWith_loop state f = do
+    str <- baseline (prompt state)
     case str of
         Nothing => pure ()
         Just line => do
@@ -13,12 +18,12 @@ baselineReplWith_loop state prompt f = do
                 Nothing => pure ()
                 Just (out, state') => do
                     putStr out
-                    baselineReplWith_loop state' prompt f
+                    baselineReplWith_loop state' f
 
 export
-baselineReplWith : {default [] completions : List String} -> a -> String -> (a -> String -> IO (Maybe (String, a))) -> IO ()
-baselineReplWith {completions} state prompt f = do
+baselineReplWith : Prompt a => {default [] completions : List String} -> a -> (a -> String -> IO (Maybe (String, a))) -> IO ()
+baselineReplWith {completions} state f = do
     readHistory ".history"
     addDictEntries completions
-    baselineReplWith_loop state prompt f
+    baselineReplWith_loop state f
     writeHistory ".history"

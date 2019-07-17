@@ -2,6 +2,7 @@ module IdeProtocol
 
 import SExp
 import Pipes
+import Config
 
 -- See: http://docs.idris-lang.org/en/latest/reference/ide-protocol.html
 
@@ -85,17 +86,17 @@ data IdeReply
     | IdeReplyWriteString String
     | IdeReplySetPrompt String
     | IdeReplyWarning String Integer Integer Integer Integer String (List SemanticSpan)
-
     -- (:warning (FilePath (LINE COL) (LINE COL) String [HIGHLIGHTING]))
 
+export
 implementation Show IdeReply where
-  show (IdeReplyReturnOk x xs) = "return, ok: " ++ (show x)
-  show (IdeReplyReturnErr x xs) = "return, error: " ++ (show x)
-  show (IdeReplyOutputOk x xs) = "output, ok: " ++ (show x)
-  show (IdeReplyOutputErr x xs) = "output, error: " ++ (show x)
-  show (IdeReplyWriteString x) = "write string: " ++ (show x)
-  show (IdeReplySetPrompt x) = "set prompt: " ++ (show x)
-  show (IdeReplyWarning path l1 c1 l2 c2 str xs) = "warning: " ++ path ++ "\n\t" ++ str
+    show (IdeReplyReturnOk x xs) = "return, ok: "
+    show (IdeReplyReturnErr x xs) = "return, error: " ++ (show x)
+    show (IdeReplyOutputOk x xs) = "output, ok: " ++ (show x)
+    show (IdeReplyOutputErr x xs) = "output, error: " ++ (show x)
+    show (IdeReplyWriteString x) = "write string: " ++ (show x)
+    show (IdeReplySetPrompt x) = "set prompt: " ++ (show x)
+    show (IdeReplyWarning path l1 c1 l2 c2 str xs) = "warning: " ++ path ++ "\n\t" ++ str
 
 export
 readIdeLine : File -> IO (Either String String)
@@ -110,7 +111,7 @@ readIdeLine f =
             | Left err => pure (Left (show err))
 
         let payload = reverse (trimNL (reverse payloadNL))
-        -- putStrLn $ "Received from pipe: " ++ payload
+        traceStrLn $ "[PIPE] Received from pipe: " ++ payload
         pure (Right payload)
 
     where
@@ -132,7 +133,7 @@ writeIdeLine str f =
             Right () <- fPutStrLn f toWrite
                 | Left err => pure (Left (show err))
 
-            putStrLn $ "Wrote to pipe: " ++ toWrite
+            traceStrLn $ "[PIPE] Wrote to pipe: " ++ toWrite
 
             pure (Right ())
 
@@ -143,9 +144,9 @@ writeIdeCommand f id c =
     let request = CSExpList [comm, CSExpAtom $ CAtomNum id] in
     writeIdeLine (show request) f
 
-export
-readIdeReply : File -> Integer -> IO (Either String IdeReply)
-readIdeReply f id = do
+
+readIdeReply' : File -> Integer -> IO (Either String IdeReply)
+readIdeReply' f id = do
     Right line <- readIdeLine f
         | Left err => pure (Left err)
 
@@ -198,10 +199,24 @@ readIdeReply f id = do
         _ => (Left $ "Do not understand: " ++ (show replyArgs))
 
 export
-readIdeReply_trace : File -> Integer -> IO (Either String IdeReply)
-readIdeReply_trace f id = do
-    Right reply <- readIdeReply f id
+readIdeReply : File -> Integer -> IO (Either String IdeReply)
+readIdeReply f id = do
+    Right reply <- readIdeReply' f id
         | Left err => pure (Left err)
 
-    putStrLn ("Received reply: " ++ (show reply))
+    traceStrLn ("[REPLY] Received reply: " ++ (show reply))
     pure (Right reply)
+
+export
+readUntilReturn : File -> Integer -> a -> (a -> Either String IdeReply -> IO a) -> IO a
+readUntilReturn f id state callback = do
+    Right reply <- readIdeReply f id
+        | Left err => (callback state (Left err))
+
+    newState <- callback state (Right reply)
+
+    case reply of
+        (IdeReplyReturnOk x xs) => pure newState
+        (IdeReplyReturnErr x xs) => pure newState
+        _ => do
+            readUntilReturn f id newState callback
