@@ -53,3 +53,16 @@ readIdeLine f = do
     putStrLn $ "Received from pipe: " ++ payload
 
     pure (Right payload)
+
+export
+writeIdeLine : String -> File -> IO (Either String ())
+writeIdeLine str f =
+    let lineLen = 1 + (fromNat (length str)) in
+    case printHex6 lineLen of
+    Nothing => pure $ Left "Line too long!"
+    (Just lenStr) =>
+        let toWrite = lenStr ++ str in
+        do
+            Right () <- fPutStrLn f toWrite
+                | Left err => pure (Left (show err))
+            pure (Right ())
