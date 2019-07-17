@@ -68,21 +68,48 @@ commandToSExp (IdeCommPrintDefinition x) = ?commandToSExp_rhs_15
 commandToSExp (IdeCommReplCompletions x) = ?commandToSExp_rhs_16
 commandToSExp IdeCommVersion = ?commandToSExp_rhs_17
 
+-- TODO
+public export
+data SemanticData
+
+public export
+SemanticSpan : Type
+SemanticSpan = (Integer, Integer, List SemanticData)
+
+public export
+data IdeReply
+    = IdeReplyReturnOk CSExp (List SemanticSpan)
+    | IdeReplyReturnErr String (List SemanticSpan)
+    | IdeReplyOutputOk CSExp (List SemanticSpan)
+    | IdeReplyOutputErr String (List SemanticSpan)
+    | IdeReplyWriteString String
+    | IdeReplySetPrompt String
+    | IdeReplyWarning String Integer Integer Integer Integer String (List SemanticSpan)
+    -- (:warning (FilePath (LINE COL) (LINE COL) String [HIGHLIGHTING]))
+
 
 export
 readIdeLine : File -> IO (Either String String)
-readIdeLine f = do
-    Right lenStr <- fGetChars f 6
-        | Left err => pure (Left (show err))
-    let Just len = parseHex (unpack lenStr) 0
-        | Nothing => pure (Left ("failed to parse hex: " ++ lenStr))
+readIdeLine f =
+    do
+        Right lenStr <- fGetChars f 6
+            | Left err => pure (Left (show err))
+        let Just len = parseHex (unpack lenStr) 0
+            | Nothing => pure (Left ("failed to parse hex: " ++ lenStr))
 
-    Right payload <- fGetChars f len
-        | Left err => pure (Left (show err))
+        Right payloadNL <- fGetChars f len
+            | Left err => pure (Left (show err))
 
-    putStrLn $ "Received from pipe: " ++ payload
+        let payload = reverse (trimNL (reverse payloadNL))
+        putStrLn $ "Received from pipe: " ++ payload
+        pure (Right payload)
 
-    pure (Right payload)
+    where
+        trimNL : String -> String
+        trimNL str with (strM str)
+            trimNL "" | StrNil = ""
+            trimNL (strCons '\n' xs) | StrCons _ _ = xs
+            trimNL (strCons x xs)    | StrCons _ _ = strCons x xs
 
 export
 writeIdeLine : String -> File -> IO (Either String ())
@@ -106,3 +133,11 @@ writeIdeCommand f id c =
     let comm = commandToSExp c in
     let request = CSExpList [comm, CSExpAtom $ CAtomNum id] in
     writeIdeLine (show request) f
+
+export
+readIdeReply : File -> Integer -> IO (Either String IdeReply)
+readIdeReply f id = do
+    Right line <- readIdeLine f
+        | Left err => pure (Left err)
+
+    ?qwer
