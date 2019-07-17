@@ -26,7 +26,9 @@ handle_reply s (Right (IdeReplyOutputOk x xs)) = pure s
 handle_reply s (Right (IdeReplyOutputErr x xs)) = pure s
 handle_reply s (Right (IdeReplyWriteString str)) = do putStrLn str; pure s
 handle_reply s (Right (IdeReplySetPrompt prmt)) = pure $ record { currentPrompt = prmt ++ "> "} s
-handle_reply s (Right (IdeReplyWarning x y z w r t xs)) = do putStrLn "warning!"; pure s
+handle_reply s (Right (IdeReplyWarning f l1 c1 l2 c2 str xs)) = do
+    putStrLn (f ++ ":" ++ (show l1) ++ ":" ++ (show c1) ++ "--" ++ (show l2) ++ ":" ++ (show c2) ++ ":" ++ str)
+    pure s
 
 
 Command_load : String -> ReplCommand ReplState

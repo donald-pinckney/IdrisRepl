@@ -23,9 +23,9 @@ int idris_close(int fd) {
     return close(fd);
 }
 
-void idris_exec_idris_ide_mode() {
+void idris_exec_idris_ide_mode(char *idrisName) {
     char *args[3];
-    args[0] = "idris";
+    args[0] = idrisName;
     args[1] = "--ide-mode";
     args[2] = NULL;
     execvp(args[0], args);

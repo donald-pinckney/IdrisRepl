@@ -1,6 +1,7 @@
 module Pipes
 
 import Data.Bits
+import Config
 
 %include C "pipes.c"
 
@@ -58,7 +59,7 @@ setlinebuf (FHandle p) = foreign FFI_C "idris_setlinebuf" (Ptr -> IO ()) p
 
 export
 exec_idris_ide_mode : IO ()
-exec_idris_ide_mode = foreign FFI_C "idris_exec_idris_ide_mode" (IO ())
+exec_idris_ide_mode = foreign FFI_C "idris_exec_idris_ide_mode" (String -> IO ()) IDRIS_NAME
 
 
 hexVal : Char -> Maybe Int
