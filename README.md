@@ -32,6 +32,7 @@ Only tested so far on macOS, should probably work fine on Linux as well. No Wind
     - [x] Evaluation, `:eval`
     - [x] `:t`
         - [ ] Broken with integer literals, i.e. `:t 5`
+    - [x] `:r`
     - [ ] ...
 - [ ] Windows support
 - [ ] Testing infrastructure?
