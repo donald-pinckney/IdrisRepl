@@ -1,7 +1,7 @@
 module testing.someDecls
 
 n : Nat
-n = S (S Z)
+n = S (S (S Z))
 
 m : Nat
 m = n + n

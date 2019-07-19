@@ -12,6 +12,7 @@ record ReplState where
     write_f : File
     reqId : Integer
     currentPrompt : String
+    currentFilePath : Maybe String
 
 implementation Prompt ReplState where
     prompt = currentPrompt
@@ -36,26 +37,43 @@ handle_reply s (Right (IdeReplyWarning f l1 c1 l2 c2 str xs)) = do
     pure s
 
 
-handling_command' : (String -> IdeCommand) -> String -> ReplCommand ReplState
-handling_command' f str state = do
-    Right () <- writeIdeCommand (write_f state) (reqId state) (f str)
+handling_command' : IdeCommand -> ReplCommand ReplState
+handling_command' comm state = do
+    Right () <- writeIdeCommand (write_f state) (reqId state) comm
         | Left err => pure (Left err)
 
     newState <- readUntilReturn (read_f state) (reqId state) state handle_reply
 
     pure $ Right $ Just ("", record { reqId $= (+ 1) } newState)
 
-handling_command : (String -> IdeCommand) -> List Char -> Either String (ReplCommand ReplState)
-handling_command f = pure . (handling_command' f) . pack
+handling_command : IdeCommand -> Either String (ReplCommand ReplState)
+handling_command comm = Right (handling_command' comm)
 
+
+command_update_state : (ReplState -> ReplState) -> Either String (ReplCommand ReplState) -> Either String (ReplCommand ReplState)
+command_update_state f (Left l) = Left l
+command_update_state f (Right r) = Right $ \s => do
+    Right (Just res) <- r s
+        | Left err => pure (Left err)
+        | Right Nothing => pure (Right Nothing)
+    pure $ Right $ Just $ f <$> res
+
+
+reload_command : ReplCommand ReplState
+reload_command (MkReplState read_f write_f reqId currentPrompt Nothing) = pure $ Left "No file loaded"
+reload_command state@(MkReplState read_f write_f reqId currentPrompt (Just cfp)) =
+    handling_command' (IdeCommLoadFile cfp Nothing) state
 
 SupportedCommands : List (CommandBuilder ReplState)
 SupportedCommands = [
-    MkCommandBuilder [['e','v','a','l']] "<expr>" "Evaluate an expression" (handling_command IdeCommInterpret),
-    MkCommandBuilder [['l'],['l','o','a','d']] "<filename>" "Load a new file" (handling_command (\path => IdeCommLoadFile path Nothing)),
-    MkCommandBuilder [['t'],['t','y','p','e']] "<expr>" "Check the type of an expression" (handling_command IdeCommTypeOf)
+    MkCommandBuilder [['e','v','a','l']] "<expr>" "Evaluate an expression" (handling_command . IdeCommInterpret . pack),
+    MkCommandBuilder [['l'],['l','o','a','d']] "<filename>" "Load a new file" (\path =>
+        command_update_state (record { currentFilePath = Just (pack path) }) $
+        handling_command (IdeCommLoadFile (pack path) Nothing)),
+    MkCommandBuilder [['t'],['t','y','p','e']] "<expr>" "Check the type of an expression" (handling_command . IdeCommTypeOf . pack),
+    MkCommandBuilder [['r'],(unpack "reload")] "" "Reload current file" (const (Right reload_command))
 ]
 
 export
 idrisRepl : File -> File -> IO ()
-idrisRepl read_f write_f = replMain SupportedCommands (MkReplState read_f write_f 1 "Idris> ")
+idrisRepl read_f write_f = replMain SupportedCommands (MkReplState read_f write_f 1 "Idris> " Nothing)
