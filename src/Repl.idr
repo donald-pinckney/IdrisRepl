@@ -21,13 +21,15 @@ implementation Prompt ReplState where
 total
 handle_reply : ReplState -> Either String IdeReply -> IO ReplState
 handle_reply s (Left err) = do putStrLn $ "Error: " ++ err; pure s
-handle_reply s (Right (IdeReplyReturnOk x hightlight)) = do
+handle_reply s (Right (IdeReplyReturnOk x highlight)) = do
     (case x of
         (CSExpAtom (CAtomStr returnStr)) => putStrLn returnStr
         _ => pure ()
     )
     pure s
-handle_reply s (Right (IdeReplyReturnErr x xs)) = pure s
+handle_reply s (Right (IdeReplyReturnErr x highlight)) = do
+    putStrLn x
+    pure s
 handle_reply s (Right (IdeReplyOutputOk x xs)) = pure s
 handle_reply s (Right (IdeReplyOutputErr x xs)) = pure s
 handle_reply s (Right (IdeReplyWriteString str)) = do putStrLn str; pure s
